@@ -1,0 +1,10 @@
+path: yolo_dataset
+train: train
+val:   val
+test:  test
+
+nc: 6
+names: ['bacterial_infection', 'crop_healthy', 'fungal_blight', 'leaf_disease', 'pest_infestation', 'viral_infection']
+
+# RTV Compliance Indicators
+# 1 = compliant (healthy), 0 = non-compliant (diseased)

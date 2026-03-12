@@ -1,0 +1,7 @@
+indicator,class_id
+bacterial_infection,0
+crop_healthy,1
+fungal_blight,2
+leaf_disease,3
+pest_infestation,4
+viral_infection,5
