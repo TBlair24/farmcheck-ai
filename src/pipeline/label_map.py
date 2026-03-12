@@ -1,26 +1,43 @@
-# Exact class names from PlantVillage dataset folders
-LABEL_MAP = {
-    # PEPPER
-    "Pepper__bell__Bacterial_spot":   {"domain": "agriculture", "indicator": "bacterial_infection", "compliant": False},
-    "Pepper__bell__healthy":          {"domain": "agriculture", "indicator": "crop_healthy",        "compliant": True},
+from pathlib import Path
 
-    # POTATO
-    "Potato__Early_blight":           {"domain": "agriculture", "indicator": "fungal_blight",       "compliant": False},
-    "Potato__healthy":                {"domain": "agriculture", "indicator": "crop_healthy",        "compliant": True},
-    "Potato__Late_blight":            {"domain": "agriculture", "indicator": "fungal_blight",       "compliant": False},
+RAW_DIR = Path("data/raw/plantvillage/PlantVillage")
 
-    # TOMATO
-    "Tomato__Target_Spot":            {"domain": "agriculture", "indicator": "leaf_disease",        "compliant": False},
-    "Tomato__Tomato_mosaic_virus":    {"domain": "agriculture", "indicator": "viral_infection",     "compliant": False},
-    "Tomato__Tomato_YellowLeaf__Curl_Virus": {"domain": "agriculture", "indicator": "viral_infection", "compliant": False},
-    "Tomato_Bacterial_spot":          {"domain": "agriculture", "indicator": "bacterial_infection", "compliant": False},
-    "Tomato_Early_blight":            {"domain": "agriculture", "indicator": "fungal_blight",       "compliant": False},
-    "Tomato_healthy":                 {"domain": "agriculture", "indicator": "crop_healthy",        "compliant": True},
-    "Tomato_Late_blight":             {"domain": "agriculture", "indicator": "fungal_blight",       "compliant": False},
-    "Tomato_Leaf_Mold":               {"domain": "agriculture", "indicator": "fungal_blight",       "compliant": False},
-    "Tomato_Septoria_leaf_spot":      {"domain": "agriculture", "indicator": "leaf_disease",        "compliant": False},
-    "Tomato_Spider_mites_Two_spotted_spider_mite": {"domain": "agriculture", "indicator": "pest_infestation", "compliant": False},
-}
+# Indicator rules based on keywords in class name
+def infer_indicator(class_name: str) -> str:
+    name = class_name.lower()
+    if "healthy" in name:
+        return "crop_healthy"
+    elif "bacterial" in name:
+        return "bacterial_infection"
+    elif "blight" in name:
+        return "fungal_blight"
+    elif "mold" in name or "mold" in name:
+        return "fungal_blight"
+    elif "septoria" in name or "target_spot" in name or "leaf_spot" in name:
+        return "leaf_disease"
+    elif "virus" in name or "mosaic" in name or "curl" in name:
+        return "viral_infection"
+    elif "spider" in name or "mite" in name:
+        return "pest_infestation"
+    else:
+        return "unclassified"
+
+def build_label_map(raw_dir: Path) -> dict:
+    """Builds label map dynamically from actual folder names"""
+    label_map = {}
+    for folder in sorted(raw_dir.iterdir()):
+        if folder.is_dir():
+            indicator = infer_indicator(folder.name)
+            compliant = "healthy" in folder.name.lower()
+            label_map[folder.name] = {
+                "domain":    "agriculture",
+                "indicator": indicator,
+                "compliant": compliant
+            }
+    return label_map
+
+# Build it once on import
+LABEL_MAP = build_label_map(RAW_DIR)
 
 def get_compliance_label(class_name: str) -> dict:
     return LABEL_MAP.get(class_name, {
@@ -30,20 +47,11 @@ def get_compliance_label(class_name: str) -> dict:
     })
 
 def get_binary_label(class_name: str) -> int:
-    """Returns 1 for compliant (healthy), 0 for non-compliant (diseased)"""
     info = get_compliance_label(class_name)
     return 1 if info["compliant"] else 0
 
 if __name__ == "__main__":
-    compliant = [k for k, v in LABEL_MAP.items() if v["compliant"]]
-    non_compliant = [k for k, v in LABEL_MAP.items() if not v["compliant"]]
-    
-    print(f"\n✅ COMPLIANT classes ({len(compliant)}):")
-    for c in compliant:
-        print(f"   ✅ {c}")
-    
-    print(f"\n❌ NON-COMPLIANT classes ({len(non_compliant)}):")
-    for c in non_compliant:
-        print(f"   ❌ {c:55} → {LABEL_MAP[c]['indicator']}")
-    
-    print(f"\n📊 Summary: {len(LABEL_MAP)} total classes mapped")
+    print(f"📦 Auto-detected {len(LABEL_MAP)} classes from folders:\n")
+    for cls, info in LABEL_MAP.items():
+        status = "✅" if info["compliant"] else "❌"
+        print(f"  {status} {cls:60} → {info['indicator']}")
