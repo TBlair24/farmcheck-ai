@@ -13,24 +13,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY api/        ./api/
-COPY models/     ./models/
-COPY runs/       ./runs/
+COPY api/    ./api/
+COPY models/ ./models/
+COPY runs/   ./runs/
 
 # Expose port
 EXPOSE 8000
 
 # Start server
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-Create `.dockerignore`:
-```
-venv/
-data/
-wandb/
-notebooks/
-__pycache__/
-*.pyc
-.git/
-.env
