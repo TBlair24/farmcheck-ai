@@ -10,14 +10,21 @@ router = APIRouter()
 
 # ── Load model once at startup ────────────────────────────────────────────
 def load_model() -> YOLO:
+    # Prefer ONNX in production — no PyTorch version dependency
+    onnx_path = Path("models/exported/farmcheck_v1.onnx")
+    if onnx_path.exists():
+        print(f"✅ Loading ONNX model → {onnx_path}")
+        return YOLO(onnx_path, task="classify")
+
+    # Fallback to .pt for local dev
     candidates = []
     for d in [Path("runs"), Path("models/weights")]:
         if d.exists():
             candidates.extend(d.rglob("best.pt"))
     if not candidates:
-        raise FileNotFoundError("❌ No model found — run training first.")
+        raise FileNotFoundError("❌ No model found.")
     best = max(candidates, key=lambda p: p.stat().st_mtime)
-    print(f"✅ Model loaded → {best}")
+    print(f"✅ Loading PyTorch model → {best}")
     return YOLO(best, task="classify")
 
 MODEL = load_model()

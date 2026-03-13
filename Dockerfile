@@ -13,9 +13,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
-COPY api/    ./api/
-COPY models/ ./models/
-COPY runs/   ./runs/
+COPY api/             ./api/
+COPY models/exported/ ./models/exported/
 
 # Expose port
 EXPOSE 8000
