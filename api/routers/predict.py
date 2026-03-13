@@ -51,18 +51,7 @@ async def predict(file: UploadFile = File(...)):
 
     # ── Read and convert image ────────────────────────────────────────────
     contents = await file.read()
-    import tempfile, os
-
-    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-        tmp.write(contents)
-        tmp_path = tmp.name
-
-    try:
-        start   = time.perf_counter()
-        results = MODEL.predict(source=tmp_path, verbose=False)
-        end     = time.perf_counter()
-    finally:
-        os.unlink(tmp_path)  # clean up temp file
+    image    = Image.open(io.BytesIO(contents)).convert("RGB")
 
     # ── Run inference ─────────────────────────────────────────────────────
     start   = time.perf_counter()
