@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 class PredictionResult(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     indicator:       str
     confidence:      float
     compliant:       bool
@@ -17,6 +19,8 @@ class PredictionResponse(BaseModel):
     inference_ms:    float
 
 class HealthResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    
     status:          str
     model_loaded:    bool
     model_version:   str
