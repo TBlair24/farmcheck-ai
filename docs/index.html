@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FarmCheck AI — Crop Compliance Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --soil:     #1a1209;
+    --bark:     #2d1f0e;
+    --moss:     #1e3a1e;
+    --leaf:     #2d6a2d;
+    --sprout:   #4caf50;
+    --lime:     #a8e063;
+    --cream:    #f5f0e8;
+    --sand:     #c8b89a;
+    --rust:     #c0580a;
+    --sky:      #7fb3c8;
+    --mist:     rgba(245,240,232,0.06);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--soil);
+    color: var(--cream);
+    font-family: 'Lora', Georgia, serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--lime);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid var(--lime);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: all 0.15s ease;
+    opacity: 0.5;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(12px);
+    background: rgba(26,18,9,0.7);
+    border-bottom: 1px solid rgba(168,224,99,0.08);
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    color: var(--lime);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--sand); }
+  nav ul {
+    display: flex; gap: 32px; list-style: none;
+  }
+  nav a {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sand);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  nav a:hover { color: var(--lime); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 120px 48px 80px;
+    gap: 64px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    right: -200px; top: -200px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(76,175,80,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--sprout);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 32px; height: 1px;
+    background: var(--sprout);
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(3rem, 5vw, 5.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 28px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--lime);
+    display: block;
+  }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: var(--sand);
+    max-width: 480px;
+    margin-bottom: 40px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 14px 28px;
+    border-radius: 2px;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: var(--lime);
+    color: var(--soil);
+    font-weight: 500;
+  }
+  .btn-primary:hover {
+    background: #c5f080;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(168,224,99,0.25);
+  }
+  .btn-outline {
+    border: 1px solid rgba(168,224,99,0.3);
+    color: var(--lime);
+  }
+  .btn-outline:hover {
+    border-color: var(--lime);
+    background: rgba(168,224,99,0.06);
+  }
+
+  /* Hero visual */
+  .hero-visual {
+    position: relative;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .metric-card {
+    background: var(--mist);
+    border: 1px solid rgba(168,224,99,0.1);
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, transform 0.3s;
+    animation: fadeUp 0.6s ease both;
+  }
+  .metric-card:hover {
+    border-color: rgba(168,224,99,0.3);
+    transform: translateY(-3px);
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--sprout), transparent);
+  }
+  .metric-card:nth-child(2) { animation-delay: 0.1s; }
+  .metric-card:nth-child(3) { animation-delay: 0.2s; }
+  .metric-card:nth-child(4) { animation-delay: 0.3s; }
+
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2.4rem;
+    color: var(--lime);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .metric-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sand);
+    opacity: 0.8;
+  }
+
+  .accuracy-bar {
+    margin-top: 16px;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .accuracy-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sprout), var(--lime));
+    border-radius: 2px;
+    width: 0;
+    animation: fillBar 1.5s ease 0.8s both;
+  }
+
+  @keyframes fillBar {
+    to { width: var(--fill-width, 100%); }
+  }
+
+  /* ── SECTION BASE ── */
+  section {
+    padding: 100px 48px;
+    position: relative;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--sprout);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    max-width: 48px;
+    height: 1px;
+    background: var(--sprout);
+    opacity: 0.4;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+
+  .section-sub {
+    font-size: 1rem;
+    color: var(--sand);
+    line-height: 1.7;
+    max-width: 560px;
+    margin-bottom: 56px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid rgba(168,224,99,0.08);
+    margin: 0 48px;
+  }
+
+  /* ── PIPELINE ── */
+  .pipeline-section {
+    background: linear-gradient(180deg, var(--soil) 0%, var(--bark) 100%);
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 20px;
+  }
+
+  .pipeline-step {
+    flex: 1;
+    min-width: 160px;
+    position: relative;
+    animation: fadeUp 0.5s ease both;
+  }
+  .pipeline-step:nth-child(2) { animation-delay: 0.1s; }
+  .pipeline-step:nth-child(3) { animation-delay: 0.2s; }
+  .pipeline-step:nth-child(4) { animation-delay: 0.3s; }
+  .pipeline-step:nth-child(5) { animation-delay: 0.4s; }
+  .pipeline-step:nth-child(6) { animation-delay: 0.5s; }
+
+  .pipeline-step::after {
+    content: '→';
+    position: absolute;
+    right: -14px;
+    top: 20px;
+    color: var(--leaf);
+    font-size: 1.2rem;
+    z-index: 2;
+  }
+  .pipeline-step:last-child::after { display: none; }
+
+  .step-icon {
+    width: 48px; height: 48px;
+    background: var(--moss);
+    border: 1px solid rgba(76,175,80,0.2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 16px;
+  }
+
+  .step-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--cream);
+  }
+
+  .step-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--sand);
+    line-height: 1.6;
+    opacity: 0.8;
+  }
+
+  .step-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    margin-top: 10px;
+  }
+  .tag-model   { background: rgba(76,175,80,0.15);  color: var(--sprout); }
+  .tag-data    { background: rgba(127,179,200,0.15); color: var(--sky); }
+  .tag-api     { background: rgba(192,88,10,0.15);   color: #e8823a; }
+  .tag-infra   { background: rgba(168,224,99,0.15);  color: var(--lime); }
+
+  /* ── PHASES ── */
+  .phases-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2px;
+    background: rgba(168,224,99,0.05);
+    border: 1px solid rgba(168,224,99,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .phase-card {
+    background: var(--bark);
+    padding: 32px;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .phase-card:hover {
+    background: var(--moss);
+  }
+  .phase-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: rgba(168,224,99,0.06);
+  }
+
+  .phase-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 3rem;
+    color: rgba(168,224,99,0.1);
+    line-height: 1;
+    margin-bottom: 12px;
+    letter-spacing: -0.04em;
+  }
+
+  .phase-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+    color: var(--lime);
+  }
+
+  .phase-desc {
+    font-size: 0.88rem;
+    color: var(--sand);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+
+  .phase-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    padding: 3px 8px;
+    border: 1px solid rgba(168,224,99,0.2);
+    color: var(--sand);
+    border-radius: 2px;
+  }
+
+  /* ── TECH STACK ── */
+  .stack-section {
+    background: var(--moss);
+  }
+
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .stack-item {
+    border: 1px solid rgba(168,224,99,0.1);
+    padding: 20px 24px;
+    border-radius: 2px;
+    background: rgba(26,18,9,0.4);
+    transition: all 0.25s;
+    animation: fadeUp 0.4s ease both;
+  }
+  .stack-item:hover {
+    border-color: rgba(168,224,99,0.3);
+    background: rgba(26,18,9,0.7);
+    transform: translateY(-2px);
+  }
+
+  .stack-category {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--sprout);
+    margin-bottom: 10px;
+    opacity: 0.8;
+  }
+
+  .stack-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--cream);
+    margin-bottom: 4px;
+  }
+
+  .stack-detail {
+    font-size: 0.8rem;
+    color: var(--sand);
+    opacity: 0.75;
+    line-height: 1.5;
+  }
+
+  /* ── RTV MAPPING ── */
+  .mapping-section { background: var(--bark); }
+
+  .mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  .mapping-table thead tr {
+    border-bottom: 1px solid rgba(168,224,99,0.15);
+  }
+
+  .mapping-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--sprout);
+    padding: 12px 20px;
+    text-align: left;
+  }
+
+  .mapping-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(168,224,99,0.05);
+    color: var(--sand);
+    line-height: 1.5;
+    vertical-align: top;
+  }
+
+  .mapping-table tr:hover td {
+    background: rgba(168,224,99,0.03);
+  }
+
+  .mapping-table td:first-child {
+    color: var(--cream);
+    font-style: italic;
+    font-family: 'Lora', serif;
+  }
+
+  .mapping-table td:last-child {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--lime);
+  }
+
+  .check {
+    color: var(--sprout);
+    margin-right: 6px;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    background: linear-gradient(135deg, var(--moss) 0%, var(--soil) 100%);
+    text-align: center;
+    padding: 120px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '🌱';
+    position: absolute;
+    font-size: 20rem;
+    opacity: 0.03;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+    line-height: 1.05;
+  }
+
+  .cta-section p {
+    color: var(--sand);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 500px;
+    margin: 0 auto 40px;
+  }
+
+  .cta-links {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--soil);
+    border-top: 1px solid rgba(168,224,99,0.08);
+    padding: 32px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  footer p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--sand);
+    opacity: 0.5;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-up {
+    animation: fadeUp 0.7s ease both;
+  }
+  .fade-up-1 { animation-delay: 0.1s; }
+  .fade-up-2 { animation-delay: 0.2s; }
+  .fade-up-3 { animation-delay: 0.3s; }
+  .fade-up-4 { animation-delay: 0.4s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; }
+    section { padding: 72px 24px; }
+    nav { padding: 16px 24px; }
+    nav ul { display: none; }
+    .pipeline { flex-direction: column; gap: 24px; }
+    .pipeline-step::after { display: none; }
+    footer { padding: 24px; }
+    .divider { margin: 0 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Farm<span>Check</span> AI</a>
+  <ul>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#stack">Stack</a></li>
+    <li><a href="#rtv">RTV Mapping</a></li>
+    <li><a href="https://github.com/TBlair24/farmcheck-ai" target="_blank">GitHub ↗</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow fade-up">Computer Vision · MLOps · Edge Deployment</div>
+    <h1 class="fade-up fade-up-1">
+      Crop<br>Compliance
+      <em>Intelligence</em>
+    </h1>
+    <p class="hero-desc fade-up fade-up-2">
+      An end-to-end computer vision system that detects agricultural
+      adoption practices from field photos — built to mirror RTV's
+      WorkMate AI ecosystem for last-mile community programs.
+    </p>
+    <div class="hero-actions fade-up fade-up-3">
+      <a href="https://github.com/TBlair24/farmcheck-ai" target="_blank" class="btn btn-primary">
+        View on GitHub →
+      </a>
+      <a href="https://farmcheck-ai.onrender.com/docs" target="_blank" class="btn btn-outline">
+        Live API Docs
+      </a>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-value">93.8%</div>
+        <div class="metric-label">Top-1 Accuracy</div>
+        <div class="accuracy-bar">
+          <div class="accuracy-fill" style="--fill-width: 93.8%"></div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">100%</div>
+        <div class="metric-label">Top-5 Accuracy</div>
+        <div class="accuracy-bar">
+          <div class="accuracy-fill" style="--fill-width: 100%"></div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">41k</div>
+        <div class="metric-label">Training Images</div>
+        <div class="accuracy-bar">
+          <div class="accuracy-fill" style="--fill-width: 75%"></div>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">~8ms</div>
+        <div class="metric-label">ONNX Inference</div>
+        <div class="accuracy-bar">
+          <div class="accuracy-fill" style="--fill-width: 88%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PIPELINE -->
+<section id="pipeline" class="pipeline-section">
+  <div class="section-label">Architecture</div>
+  <h2 class="section-title">End-to-End Pipeline</h2>
+  <p class="section-sub">
+    From raw field images to adoption scores — every component
+    maps directly to RTV's VENN department stack.
+  </p>
+
+  <div class="pipeline">
+    <div class="pipeline-step">
+      <div class="step-icon">📸</div>
+      <div class="step-name">Field Image</div>
+      <div class="step-desc">Crop photo captured by field officer via WorkMate app</div>
+      <span class="step-tag tag-data">Input</span>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-icon">⚙️</div>
+      <div class="step-name">FastAPI</div>
+      <div class="step-desc">REST endpoint validates, preprocesses, and routes image</div>
+      <span class="step-tag tag-api">API</span>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-icon">🧠</div>
+      <div class="step-name">YOLOv8n</div>
+      <div class="step-desc">Classifies into 6 compliance indicators via ONNX Runtime</div>
+      <span class="step-tag tag-model">Model</span>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-icon">📊</div>
+      <div class="step-name">Compliance Score</div>
+      <div class="step-desc">Binary + weighted adoption score mapped to RTV framework</div>
+      <span class="step-tag tag-model">Output</span>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-icon">🗄️</div>
+      <div class="step-name">DuckDB Warehouse</div>
+      <div class="step-desc">Bronze → Silver → Gold medallion architecture</div>
+      <span class="step-tag tag-data">Warehouse</span>
+    </div>
+    <div class="pipeline-step">
+      <div class="step-icon">📈</div>
+      <div class="step-name">Dash Dashboard</div>
+      <div class="step-desc">Village-level adoption monitoring for program managers</div>
+      <span class="step-tag tag-infra">Dashboard</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PHASES -->
+<section id="phases">
+  <div class="section-label">Project Structure</div>
+  <h2 class="section-title">Five Phases</h2>
+  <p class="section-sub">
+    Built phase-by-phase to match every requirement in RTV's
+    Data Scientist job description.
+  </p>
+
+  <div class="phases-grid">
+    <div class="phase-card">
+      <div class="phase-num">01</div>
+      <div class="phase-title">Dataset & Annotation</div>
+      <div class="phase-desc">41k PlantVillage images ingested, stratified to 1,500 samples, annotated via Label Studio with RTV-mapped compliance indicators.</div>
+      <div class="phase-tags">
+        <span class="tag">PlantVillage</span>
+        <span class="tag">Label Studio</span>
+        <span class="tag">DVC</span>
+        <span class="tag">15 Classes</span>
+      </div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">02</div>
+      <div class="phase-title">Computer Vision Model</div>
+      <div class="phase-desc">YOLOv8n-cls trained with augmentation and class weighting. 93.8% top-1 accuracy tracked across 30 epochs with W&B.</div>
+      <div class="phase-tags">
+        <span class="tag">YOLOv8</span>
+        <span class="tag">PyTorch</span>
+        <span class="tag">W&B</span>
+        <span class="tag">93.8% Acc</span>
+      </div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">03</div>
+      <div class="phase-title">Edge Deployment</div>
+      <div class="phase-desc">Model exported to ONNX for cross-platform field deployment. Benchmarked PyTorch vs ONNX latency and accuracy on CPU.</div>
+      <div class="phase-tags">
+        <span class="tag">ONNX Runtime</span>
+        <span class="tag">~8ms Latency</span>
+        <span class="tag">ARM-ready</span>
+      </div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">04</div>
+      <div class="phase-title">MLOps & REST API</div>
+      <div class="phase-desc">FastAPI service with Pydantic schemas, Swagger docs, Docker containerisation, GitHub Actions CI/CD, deployed on Render.</div>
+      <div class="phase-tags">
+        <span class="tag">FastAPI</span>
+        <span class="tag">Docker</span>
+        <span class="tag">GitHub Actions</span>
+        <span class="tag">Render</span>
+      </div>
+    </div>
+    <div class="phase-card">
+      <div class="phase-num">05</div>
+      <div class="phase-title">Data Pipeline & Dashboard</div>
+      <div class="phase-desc">Medallion architecture in DuckDB ingests predictions, enriches with compliance metadata, aggregates household adoption scores.</div>
+      <div class="phase-tags">
+        <span class="tag">DuckDB</span>
+        <span class="tag">Bronze/Silver/Gold</span>
+        <span class="tag">Plotly Dash</span>
+        <span class="tag">50 Households</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- STACK -->
+<section id="stack" class="stack-section">
+  <div class="section-label">Technology</div>
+  <h2 class="section-title">Full Stack</h2>
+  <p class="section-sub">Every tool chosen to mirror RTV's production environment.</p>
+
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-category">Model</div>
+      <div class="stack-name">YOLOv8n-cls</div>
+      <div class="stack-detail">Ultralytics classification, 2.84MB, 30 epoch training</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.05s">
+      <div class="stack-category">Tracking</div>
+      <div class="stack-name">Weights & Biases</div>
+      <div class="stack-detail">Experiment logging, artifact versioning, model registry</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.1s">
+      <div class="stack-category">Edge</div>
+      <div class="stack-name">ONNX Runtime</div>
+      <div class="stack-detail">Cross-platform inference, Android/iOS field app ready</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.15s">
+      <div class="stack-category">API</div>
+      <div class="stack-name">FastAPI</div>
+      <div class="stack-detail">Async REST, Pydantic v2 schemas, OpenAPI 3.1 docs</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.2s">
+      <div class="stack-category">Infra</div>
+      <div class="stack-name">Docker + Render</div>
+      <div class="stack-detail">Containerised deployment, auto-deploy on git push</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.25s">
+      <div class="stack-category">CI/CD</div>
+      <div class="stack-name">GitHub Actions</div>
+      <div class="stack-detail">Test → build → deploy pipeline on every push to main</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.3s">
+      <div class="stack-category">Warehouse</div>
+      <div class="stack-name">DuckDB</div>
+      <div class="stack-detail">Medallion architecture: Bronze / Silver / Gold layers</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.35s">
+      <div class="stack-category">Annotation</div>
+      <div class="stack-name">Label Studio</div>
+      <div class="stack-detail">Pre-labeling pipeline, 1,500 image annotation workflow</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.4s">
+      <div class="stack-category">Versioning</div>
+      <div class="stack-name">DVC</div>
+      <div class="stack-detail">Dataset and model version control alongside Git</div>
+    </div>
+    <div class="stack-item" style="animation-delay:0.45s">
+      <div class="stack-category">Dashboard</div>
+      <div class="stack-name">Plotly Dash</div>
+      <div class="stack-detail">Interactive village adoption monitoring dashboard</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- RTV MAPPING -->
+<section id="rtv" class="mapping-section">
+  <div class="section-label">RTV Alignment</div>
+  <h2 class="section-title">Job Description Mapping</h2>
+  <p class="section-sub">
+    Every technical requirement from RTV's Data Scientist role
+    is addressed by a specific component of this project.
+  </p>
+
+  <table class="mapping-table">
+    <thead>
+      <tr>
+        <th>RTV Requirement</th>
+        <th>FarmCheck Implementation</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>YOLO-based object detection & image classification</td>
+        <td>YOLOv8n-cls trained on 41k PlantVillage images, 93.8% accuracy</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>ML training, validation, and test pipelines</td>
+        <td>Stratified 70/15/15 split, augmentation, early stopping</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>Edge deployment — TFLite / ONNX for offline use</td>
+        <td>ONNX export, ~8ms CPU inference, ARM-ready for Android</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>Image annotation workflows & labeled datasets</td>
+        <td>Label Studio pre-labeling pipeline, 1,500 annotated samples</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>Databricks medallion architecture integration</td>
+        <td>DuckDB Bronze → Silver → Gold pipeline with compliance scores</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>Binary and weighted adoption scoring</td>
+        <td>6 compliance indicators mapped to binary + confidence scores</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>Weights & Biases experiment tracking</td>
+        <td>Full run tracking, artifacts, benchmark comparison tables</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>RESTful APIs exposing model predictions</td>
+        <td>FastAPI with OpenAPI 3.1 docs, live on Render</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>CI/CD pipelines for model deployment</td>
+        <td>GitHub Actions: test → Docker build → Render deploy</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+      <tr>
+        <td>Household adoption monitoring</td>
+        <td>Plotly Dash dashboard — 50 households, 5 villages tracked</td>
+        <td><span class="check">✓</span>Complete</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Built for the Field.<br>Ready for Production.</h2>
+  <p>
+    Explore the codebase, test the live API, or reach out
+    to discuss the project in detail.
+  </p>
+  <div class="cta-links">
+    <a href="https://github.com/TBlair24/farmcheck-ai" target="_blank" class="btn btn-primary">
+      GitHub Repository →
+    </a>
+    <a href="https://farmcheck-ai.onrender.com/docs" target="_blank" class="btn btn-outline">
+      Live API →
+    </a>
+    <a href="https://wandb.ai/agotech/farmcheck-ai" target="_blank" class="btn btn-outline">
+      W&B Dashboard →
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>FarmCheck AI — Built to match RTV's WorkMate AI ecosystem</p>
+  <p>YOLOv8 · ONNX · FastAPI · DuckDB · Plotly Dash</p>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  let rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top  = e.clientY + 'px';
+    rx += (e.clientX - rx) * 0.12;
+    ry += (e.clientY - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+  });
+
+  // Smooth ring follow
+  function animateRing() {
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+
+  // Cursor hover effect
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.transform = 'translate(-50%, -50%) scale(2)';
+      ring.style.transform   = 'translate(-50%, -50%) scale(1.5)';
+      ring.style.opacity     = '0.2';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+      ring.style.transform   = 'translate(-50%, -50%) scale(1)';
+      ring.style.opacity     = '0.5';
+    });
+  });
+
+  // Scroll-triggered fade-ins
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.phase-card, .stack-item, .pipeline-step').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(16px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
